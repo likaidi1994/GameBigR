@@ -41,29 +41,67 @@ GameBigR is a small research/demo stack that turns **game product profiles** (fr
 
 ```mermaid
 flowchart LR
-  subgraph input [输入]
+  subgraph input [输入层]
     DB[(SQLite games)]
     NL[自然语言描述]
+    PL[(players + 准真实标签)]
   end
-  subgraph parse [解析]
-    GP[画像 / 需求向量]
+  subgraph parse [解析层]
+    GP[游戏画像标准化]
+    NEEDS[需求向量]
   end
-  subgraph agent [LangGraph]
+  subgraph agent [决策层（LangGraph）]
     A1[GameParser]
     A2[RuleSelector]
     A3[LLMRewriter]
     A4[Evidence]
     A5[AudienceBuilder]
   end
-  subgraph out [输出]
+  subgraph eval [评估与学习层]
     SQL[人群包 SQL]
-    MET[模拟指标]
+    ASSIGN[Campaign Assignment<br/>treatment / holdout]
+    OBS[Campaign Observation]
+    H[Holdout Metrics<br/>pay_uplift / ltv_uplift]
+    FB[rule_feedback]
+    W[need_weights]
   end
-  DB --> A1
+  DB --> GP
   NL --> GP
-  GP --> A1
-  A1 --> A2 --> A3 --> A4 --> A5 --> SQL --> MET
+  GP --> NEEDS --> A1
+  A1 --> A2 --> A3 --> A4 --> A5 --> SQL
+  SQL --> ASSIGN
+  PL --> ASSIGN --> OBS --> H --> FB --> W
+  W -. 下轮生效 .-> A1
 ```
+
+### 架构分层说明（含在线学习闭环）
+
+1. **输入层（Game + Player）**
+   - 游戏侧输入支持两种来源：`games` 表结构化字段，或自然语言描述抽取后再写入 `games`。
+   - 玩家侧 `players` 同时提供行为特征与准真实标签（如 `quasi_real_first_pay_label`、`quasi_real_ltv30`），用于 holdout 评估与反馈学习。
+
+2. **解析层（画像与需求）**
+   - 对游戏画像进行标准化后映射为需求向量（need distribution），作为后续规则选择的决策上下文。
+   - 若有业务目标（如 `high_ltv`），会对需求向量做目标导向调整与权重缩放。
+
+3. **决策层（LangGraph 编排）**
+   - `GameParser`：读取画像并生成需求向量。
+   - `RuleSelector`：基于本体规则生成 P0/P1/P2/EXCLUSION 条件。
+   - `LLMRewriter`（可选）：在白名单约束下对规则做增量重写。
+   - `Evidence`：输出 direct/proxy 证据比例与风险标记。
+   - `AudienceBuilder`：产出可执行人群包 SQL（`strong_match` / `high_potential_expand` / `low_cost_explore` / `not_recommended`）。
+
+4. **评估与学习层（核心闭环）**
+   - **Campaign Assignment**：从目标包（示例为 `high_potential_expand`）中随机切分 treatment 与 holdout（默认 20%）。
+   - **Campaign Observation**：写入活动观测，记录每位用户的支付与 LTV 标签。
+   - **Holdout Metrics**：计算 `treatment - holdout` 的增量（`pay_uplift`、`ltv_uplift`），避免“只看触达人群”导致的高估。
+   - **Feedback 回写**：将 uplift 映射为 `rule_feedback.reward_score`，并按 need 强度分配信用。
+   - **权重更新**：`need_weights` 依据历史反馈做平滑更新（有上下界保护），在下一轮编排时生效，形成可解释的在线学习回路。
+
+5. **为什么这套闭环有效**
+   - 把“策略是否真的带来增量”与“触达人群天生表现更好”分离开。
+   - 学习信号来源于 holdout 对照，而不是单看圈中用户绝对指标。
+   - 保持规则可解释性的同时，持续让权重向高增量方向收敛。
 
 ---
 

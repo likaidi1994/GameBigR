@@ -4494,3 +4494,100 @@ git push origin v0.1.0
 ---
 
 如果你愿意，我可以下一步给你一份**“可直接粘贴执行”的命令清单**（按你当前仓库状态定制，避免你手动判断分支/remote 状态）。
+
+---
+
+_**User**_
+
+@README.md:40-66 请生成更详细的架构解释，包含在线学习部分的设计；
+
+---
+
+_**Agent (default)**_
+
+我会在 `README.md` 的架构部分补一段“端到端数据流 + 在线学习闭环”的详细说明，并把图一起升级成包含 holdout 与反馈回写的版本。
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: e:\GameBigR\README.md</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: e:\GameBigR\README.md</summary>
+
+</details>
+
+</tool-use>
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2"><details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "e:\\GameBigR\\README.md"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "e:\\GameBigR\\README.md"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints"><details>
+<summary>Tool use: **read_lints**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+已按你指定的 `README.md` 架构段落完成增强，主要更新如下：
+
+- 升级了 Mermaid 架构图（不再只到 SQL/模拟指标）：
+  - 新增 `players + 准真实标签`
+  - 新增 `Campaign Assignment (treatment/holdout)`
+  - 新增 `Observation -> Holdout Metrics -> rule_feedback -> need_weights`
+  - 显示 `need_weights` 对下一轮策略的回流（在线学习闭环）
+
+- 新增“架构分层说明（含在线学习闭环）”详细文字，分 5 部分：
+  1. 输入层（游戏画像 + 玩家标签）
+  2. 解析层（画像标准化与需求向量）
+  3. 决策层（LangGraph 各 Agent 职责）
+  4. 评估与学习层（holdout 增量评估 + 反馈回写 + 权重更新）
+  5. 为什么有效（避免“自我感觉良好”的高估）
+
+如果你希望，我可以继续帮你补一段“**线上部署口径**”（如窗口期定义、延迟反馈处理、显著性阈值）放在该小节下面，方便对外展示更专业。

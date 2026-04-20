@@ -36,7 +36,7 @@ PLAYER_AVAILABILITY: Dict[str, Availability] = {
     "device_tier": Availability("available", [], 0.93),
 }
 
-
+#TODO: 游戏标签到需求向量的映射 当前只是简单的游戏标签到需求向量的映射，后续根据业务调整；可根据需求schema和游戏schema，由agent解析生成；也可根据实际业务需求，由业务专家手动配置
 GAME_TO_NEED_RULES: Dict[str, Dict[str, float]] = {
     "high_competition": {"status_control": 0.35, "tension_drive": 0.25},
     "high_identity_display": {"identity_isolation": 0.30, "status_control": 0.15},

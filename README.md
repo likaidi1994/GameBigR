@@ -1,7 +1,7 @@
 # GameBigR
 
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-pytest-green.svg)](https://pytest.org/)
+[Python](https://www.python.org/downloads/)
+[Tests](https://pytest.org/)
 
 **游戏圈群策略验证与人群包编排（Agent + 规则引擎 + 模拟评估）**
 
@@ -25,15 +25,17 @@ GameBigR is a small research/demo stack that turns **game product profiles** (fr
 
 ## 功能特性
 
-| 能力 | 说明 |
-|------|------|
-| **游戏画像输入** | 支持从 SQLite `games` 表读取结构化画像，或通过 **自然语言描述** 做意图识别与字段抽取后入库 |
-| **需求向量** | 基于本体规则将画像标签映射为「需求」权重（`parse_game_to_needs`） |
-| **Agent 编排** | LangGraph 流水线：解析 → 规则与 SQL → LLM 规则重写（可选）→ 证据摘要 → 人群包 |
-| **规则与 SQL** | 由策略引擎生成多档人群包 SQL（强匹配 / 高潜扩量 / 低成本探索 / 不推荐） |
-| **模拟评估** | 对 `players` 表执行人群 SQL，汇总安装、D7、首充、LTV 等模拟指标 |
-| **在线学习** | 根据业务目标与反馈更新 need 权重（演示用模拟反馈） |
-| **对照实验** | 导出多组实验 SQL 与汇总结果（如 `outputs/` 下 CSV） |
+
+| 能力           | 说明                                                       |
+| ------------ | -------------------------------------------------------- |
+| **游戏画像输入**   | 支持从 SQLite `games` 表读取结构化画像，或通过 **自然语言描述** 做意图识别与字段抽取后入库 |
+| **需求向量**     | 基于本体规则将画像标签映射为「需求」权重（`parse_game_to_needs`）              |
+| **Agent 编排** | LangGraph 流水线：解析 → 规则与 SQL → LLM 规则重写（可选）→ 证据摘要 → 人群包    |
+| **规则与 SQL**  | 由策略引擎生成多档人群包 SQL（强匹配 / 高潜扩量 / 低成本探索 / 不推荐）               |
+| **模拟评估**     | 对 `players` 表执行人群 SQL，汇总安装、D7、首充、LTV 等模拟指标               |
+| **在线学习**     | 根据业务目标与反馈更新 need 权重（演示用模拟反馈）                             |
+| **对照实验**     | 导出多组实验 SQL 与汇总结果（如 `outputs/` 下 CSV）                     |
+
 
 ---
 
@@ -74,34 +76,32 @@ flowchart LR
   W -. 下轮生效 .-> A1
 ```
 
-### 架构分层说明（含在线学习闭环）
+
+
+### 架构分层说明
 
 1. **输入层（Game + Player）**
-   - 游戏侧输入支持两种来源：`games` 表结构化字段，或自然语言描述抽取后再写入 `games`。
-   - 玩家侧 `players` 同时提供行为特征与准真实标签（如 `quasi_real_first_pay_label`、`quasi_real_ltv30`），用于 holdout 评估与反馈学习。
-
+  - 游戏侧输入支持两种来源：`games` 表结构化字段，或自然语言描述抽取后再写入 `games`。
+  - 玩家侧 `players` 同时提供行为特征与准真实标签（如 `quasi_real_first_pay_label`、`quasi_real_ltv30`），用于 holdout 评估与反馈学习。
 2. **解析层（画像与需求）**
-   - 对游戏画像进行标准化后映射为需求向量（need distribution），作为后续规则选择的决策上下文。
-   - 若有业务目标（如 `high_ltv`），会对需求向量做目标导向调整与权重缩放。
-
+  - 对游戏画像进行标准化后映射为需求向量（need distribution），作为后续规则选择的决策上下文。
+  - 若有业务目标（如 `high_ltv`），会对需求向量做目标导向调整与权重缩放。
 3. **决策层（LangGraph 编排）**
-   - `GameParser`：读取画像并生成需求向量。
-   - `RuleSelector`：基于本体规则生成 P0/P1/P2/EXCLUSION 条件。
-   - `LLMRewriter`（可选）：在白名单约束下对规则做增量重写。
-   - `Evidence`：输出 direct/proxy 证据比例与风险标记。
-   - `AudienceBuilder`：产出可执行人群包 SQL（`strong_match` / `high_potential_expand` / `low_cost_explore` / `not_recommended`）。
-
-4. **评估与学习层（核心闭环）**
-   - **Campaign Assignment**：从目标包（示例为 `high_potential_expand`）中随机切分 treatment 与 holdout（默认 20%）。
-   - **Campaign Observation**：写入活动观测，记录每位用户的支付与 LTV 标签。
-   - **Holdout Metrics**：计算 `treatment - holdout` 的增量（`pay_uplift`、`ltv_uplift`），避免“只看触达人群”导致的高估。
-   - **Feedback 回写**：将 uplift 映射为 `rule_feedback.reward_score`，并按 need 强度分配信用。
-   - **权重更新**：`need_weights` 依据历史反馈做平滑更新（有上下界保护），在下一轮编排时生效，形成可解释的在线学习回路。
-
+  - `GameParser`：读取画像并生成需求向量。
+  - `RuleSelector`：基于本体规则生成 P0/P1/P2/EXCLUSION 条件。
+  - `LLMRewriter`（可选）：在白名单约束下对规则做增量重写。
+  - `Evidence`：输出 direct/proxy 证据比例与风险标记。
+  - `AudienceBuilder`：产出可执行人群包 SQL（`strong_match` / `high_potential_expand` / `low_cost_explore` / `not_recommended`）。
+4. **评估与学习层（闭环）**
+  - **Campaign Assignment**：从目标包（示例为 `high_potential_expand`）中随机切分 treatment 与 holdout（默认 20%）。
+  - **Campaign Observation**：写入活动观测，记录每位用户的支付与 LTV 标签。
+  - **Holdout Metrics**：计算 `treatment - holdout` 的增量（`pay_uplift`、`ltv_uplift`），避免“只看触达人群”导致的高估。
+  - **Feedback 回写**：将 uplift 映射为 `rule_feedback.reward_score`，并按 need 强度分配信用。
+  - **权重更新**：`need_weights` 依据历史反馈做平滑更新（有上下界保护），在下一轮编排时生效，形成可解释的在线学习回路。
 5. **为什么这套闭环有效**
-   - 把“策略是否真的带来增量”与“触达人群天生表现更好”分离开。
-   - 学习信号来源于 holdout 对照，而不是单看圈中用户绝对指标。
-   - 保持规则可解释性的同时，持续让权重向高增量方向收敛。
+  - 把“策略是否真的带来增量”与“触达人群天生表现更好”分离开。
+  - 学习信号来源于 holdout 对照，而不是单看圈中用户绝对指标。
+  - 保持规则可解释性的同时，持续让权重向高增量方向收敛。
 
 ---
 
@@ -128,7 +128,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> 依赖包含：`langgraph`、`langchain-core`、`langchain-openai`、`pytest` 等，详见 [`requirements.txt`](requirements.txt)。
+> 依赖包含：`langgraph`、`langchain-core`、`langchain-openai`、`pytest` 等，详见 `[requirements.txt](requirements.txt)`。
 
 ---
 
@@ -146,7 +146,7 @@ python run_e2e.py
 
 ### 2. 使用自然语言描述游戏
 
-由模块 **`extract_game_profile_from_description`** 解析描述并写入 `games` 表，再执行同一套编排：
+由模块 `**extract_game_profile_from_description**` 解析描述并写入 `games` 表，再执行同一套编排：
 
 ```bash
 python run_e2e.py --from-description "三国赛季制SLG，强公会国战，写实画风，赛季更新，口碑4.5分"
@@ -177,11 +177,13 @@ print(result["extraction"], result["needs"])
 
 在项目根目录创建 `.env`（可选，用于 LLM 能力）：
 
-| 变量 | 说明 |
-|------|------|
-| `OPENAI_API_KEY` | API 密钥；未设置时，规则重写与自然语言抽取会回退到启发式逻辑 |
-| `OPENAI_BASE_URL` | 自定义兼容端点（如 DeepSeek、自建网关），需以 `/v1` 为路径约定 |
-| `RULE_LLM_MODEL` | 覆盖默认模型名（见 `src/llm_rules.py` 中 `build_LLM_args`） |
+
+| 变量                | 说明                                               |
+| ----------------- | ------------------------------------------------ |
+| `OPENAI_API_KEY`  | API 密钥；未设置时，规则重写与自然语言抽取会回退到启发式逻辑                 |
+| `OPENAI_BASE_URL` | 自定义兼容端点（如 DeepSeek、自建网关），需以 `/v1` 为路径约定          |
+| `RULE_LLM_MODEL`  | 覆盖默认模型名（见 `src/llm_rules.py` 中 `build_LLM_args`） |
+
 
 ---
 

@@ -1,0 +1,4 @@
+group,size,install_rate,d7_rate,first_pay_rate,ltv30_avg,high_value_ratio
+manual_group,332,0.5978,0.4925,0.336,239.07,0.7139
+pure_model_group,300,0.6399,0.5328,0.3807,378.22,1.0
+agent_model_group,266,0.596,0.4939,0.3475,244.49,0.7556

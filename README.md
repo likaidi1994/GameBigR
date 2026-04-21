@@ -12,6 +12,7 @@ GameBigR is a small research/demo stack that turns **game product profiles** (fr
 ## 目录
 
 - [功能特性](#功能特性)
+- [设计文档（详细）](docs/DESIGN.md)
 - [架构概览](#架构概览)
 - [环境要求](#环境要求)
 - [安装](#安装)

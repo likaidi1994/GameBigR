@@ -76,7 +76,10 @@ CREATE TABLE IF NOT EXISTS campaign_observations (
 CREATE TABLE IF NOT EXISTS rule_feedback (
     campaign_id TEXT NOT NULL,
     business_goal TEXT NOT NULL,
+    package_name TEXT,
     need TEXT NOT NULL,
+    rule_id TEXT,
+    feedback_level TEXT NOT NULL DEFAULT 'need',
     reward_score REAL NOT NULL,
     created_at TEXT NOT NULL
 );
@@ -87,6 +90,14 @@ CREATE TABLE IF NOT EXISTS need_weights (
     weight_multiplier REAL NOT NULL,
     updated_at TEXT NOT NULL,
     PRIMARY KEY (business_goal, need)
+);
+
+CREATE TABLE IF NOT EXISTS rule_weights (
+    business_goal TEXT NOT NULL,
+    rule_id TEXT NOT NULL,
+    weight_multiplier REAL NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (business_goal, rule_id)
 );
 """
 
@@ -110,5 +121,23 @@ def init_schema(conn: sqlite3.Connection) -> None:
     for col, sql_type in missing_cols:
         if col not in existing_cols:
             conn.execute(f"ALTER TABLE players ADD COLUMN {col} {sql_type}")
+    feedback_cols = {row["name"] for row in conn.execute("PRAGMA table_info(rule_feedback)").fetchall()}
+    if "package_name" not in feedback_cols:
+        conn.execute("ALTER TABLE rule_feedback ADD COLUMN package_name TEXT")
+    if "rule_id" not in feedback_cols:
+        conn.execute("ALTER TABLE rule_feedback ADD COLUMN rule_id TEXT")
+    if "feedback_level" not in feedback_cols:
+        conn.execute("ALTER TABLE rule_feedback ADD COLUMN feedback_level TEXT NOT NULL DEFAULT 'need'")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rule_weights (
+            business_goal TEXT NOT NULL,
+            rule_id TEXT NOT NULL,
+            weight_multiplier REAL NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (business_goal, rule_id)
+        )
+        """
+    )
     conn.commit()
 

@@ -4591,3 +4591,139 @@ _**Agent (default)**_
   5. 为什么有效（避免“自我感觉良好”的高估）
 
 如果你希望，我可以继续帮你补一段“**线上部署口径**”（如窗口期定义、延迟反馈处理、显著性阈值）放在该小节下面，方便对外展示更专业。
+
+---
+
+_**User**_
+
+@e:\GameBigR\ 请根据该项目的内容，抽象出设计思想，写出详细的设计文档；以及面对上线后真实数据的情况，对可扩展性的思考  
+
+---
+
+_**Agent (default)**_
+
+<think><details><summary>Thought Process</summary>
+GameBigR is a scalable game development framework designed to handle large-scale production environments with real-world data. It emphasizes modular architecture, performance optimization, and seamless integration with existing systems. Key aspects include:
+
+- Modular design for flexible component reuse
+- Performance-focused engine architecture
+- Real-time data processing capabilities
+- Production-ready deployment strategies
+- Scalable infrastructure for high-concurrency scenarios
+
+The framework supports both small-scale prototypes and enterprise-level applications through its extensible design patterns and robust API interfaces.</details></think>
+
+_**Agent (default)**_
+
+正在通读关键模块以撰写与实现一致的设计文档，并单独成章讨论真实数据与上线后的可扩展性。
+
+
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: e:\GameBigR\src\agentic_workflow.py</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: e:\GameBigR\src\db.py</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: e:\GameBigR\src\strategy_engine.py</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<think><details><summary>Thought Process</summary>
+I'll create a comprehensive DESIGN.md file with detailed documentation.</details></think>
+
+_**Agent (default)**_
+
+正在创建 `docs/DESIGN.md`，作为与代码实现一致的设计文档。
+
+
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: e:\GameBigR\docs\DESIGN.md</summary>
+
+</details>
+
+</tool-use>
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2"><details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<think><details><summary>Thought Process</summary>
+Add a link in README under  and a short pointer after   user requested only the design document, so adding a link is helpful.</details></think>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: e:\GameBigR\README.md</summary>
+
+</details>
+
+</tool-use>
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2"><details>
+<summary>Tool use: **edit_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+已完成以下内容：
+
+## 1. 详细设计文档
+
+新增 **`docs/DESIGN.md`**，主要包括：
+
+- **背景与问题**：可解释 vs 效果、绝对指标 vs 增量、稀疏信号与代理特征  
+- **设计目标（G1–G5）** 与**非目标**边界  
+- **核心设计思想（抽象）**：本体驱动、显式证据链、编排与计算分离、增量评估哲学、在 need 维度做信用分配  
+- **系统架构**：分层数据流、LangGraph 状态与节点、`CircleState` 字段表  
+- **数据模型**：`games`、`players`（含 `simulated_*` / `quasi_real_*`）、`campaign_assignments` / `campaign_observations`、`rule_feedback` / `need_weights` 的职责说明  
+- **关键流程**：Need 生成、业务目标微调、权重缩放、规则与 SQL、Holdout → 反馈 → `need_weights` 闭环  
+- **非功能**：可测性、LLM 约束、clamp 稳定性等  
+- **上线与真实数据下的可扩展性**：存储/计算迁移、归因窗口与延迟标签、holdout 进阶因果、反馈粒度、本体演进、治理合规  
+- **演进路线建议**与**仓库文件映射表**  
+
+## 2. README 入口
+
+在 **`README.md`** 的目录中增加了一条链接：**[设计文档（详细）](docs/DESIGN.md)**，方便从首页进入设计文档。
+
+若你希望把「设计文档」再拆成 `ADR/`（架构决策记录）或增加英文版 `docs/DESIGN.en.md`，可以说明偏好我再加一版。

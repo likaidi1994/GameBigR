@@ -8,7 +8,12 @@ from langgraph.graph import END, START, StateGraph
 from .data_builder import insert_game
 from .game_description_parser import GameDescriptionExtraction, extract_game_profile_from_description
 from .llm_rules import rewrite_rules_with_llm
-from .online_learning import apply_need_multipliers, get_need_multipliers
+from .online_learning import (
+    apply_need_multipliers,
+    apply_rule_multipliers,
+    get_need_multipliers,
+    get_rule_multipliers,
+)
 from .strategy_engine import (
     StrategyOutput,
     build_sql_packages_from_rules,
@@ -90,6 +95,8 @@ def llm_rewriter_agent(state: CircleState) -> CircleState:
         business_goal=state.get("business_goal", "high_ltv"),
     )
     strategy.rules = rewrite.rewritten_rules
+    rule_multipliers = get_rule_multipliers(state["conn"], state.get("business_goal", "high_ltv"))
+    strategy.rules = apply_rule_multipliers(strategy.rules, rule_multipliers)
     strategy.sql_packages = build_sql_packages_from_rules(strategy.rules)
     return {
         "strategy_output": strategy,
@@ -97,7 +104,10 @@ def llm_rewriter_agent(state: CircleState) -> CircleState:
         "llm_used": rewrite.llm_used,
         "trace": _append_trace(
             state,
-            f"LLMRuleRewriterAgent: 已完成规则重写与扩展 (llm_used={rewrite.llm_used})",
+            (
+                "LLMRuleRewriterAgent: 已完成规则重写与扩展 "
+                f"(llm_used={rewrite.llm_used}, rule_weights={len(rule_multipliers)})"
+            ),
         ),
     }
 

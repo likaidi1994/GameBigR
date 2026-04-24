@@ -38,11 +38,15 @@ def _bootstrap(tmp_path: Path):
 def test_online_learning_weight_update(tmp_path: Path):
     conn = _bootstrap(tmp_path)
     first = run_agentic_orchestrator(conn, "GA", business_goal="high_ltv")
-    write_simulated_feedback(conn, "CMP_X", "high_ltv", first["needs"])
+    write_simulated_feedback(conn, "CMP_X", "high_potential_expand", "high_ltv", first["needs"], first["rules"])
     updated_count = update_weights_from_feedback(conn, "high_ltv")
     second = run_agentic_orchestrator(conn, "GA", business_goal="high_ltv")
     assert updated_count > 0
     assert first["needs"] != second["needs"]
+    changed_conf_rules = [
+        r for r in second["rules"] if abs(float(r.get("learning_multiplier", 1.0)) - 1.0) > 1e-6
+    ]
+    assert changed_conf_rules
 
 
 def test_experiment_export_three_groups(tmp_path: Path):
@@ -94,7 +98,32 @@ def test_holdout_evaluation_and_real_feedback(tmp_path: Path):
         package_name="high_potential_expand",
         business_goal="high_ltv",
         needs=result["needs"],
+        rules=result["rules"],
     )
     updated = update_weights_from_feedback(conn, business_goal="high_ltv")
     assert updated > 0
+
+
+def test_rule_feedback_contains_need_and_rule_levels(tmp_path: Path):
+    conn = _bootstrap(tmp_path)
+    result = run_agentic_orchestrator(conn, "GA", business_goal="high_ltv")
+    write_simulated_feedback(
+        conn,
+        campaign_id="CMP_LEVEL",
+        package_name="high_potential_expand",
+        business_goal="high_ltv",
+        needs=result["needs"],
+        rules=result["rules"],
+    )
+    counts = conn.execute(
+        """
+        SELECT feedback_level, COUNT(*) AS cnt
+        FROM rule_feedback
+        WHERE campaign_id = 'CMP_LEVEL'
+        GROUP BY feedback_level
+        """
+    ).fetchall()
+    level_map = {row["feedback_level"]: int(row["cnt"]) for row in counts}
+    assert level_map.get("need", 0) > 0
+    assert level_map.get("rule", 0) > 0
 

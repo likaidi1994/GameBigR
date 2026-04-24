@@ -185,13 +185,17 @@ def rewrite_rules_with_llm(
         business_goal=business_goal,
         base_rules=json.dumps(base_rules[:8], ensure_ascii=True),
     )
-    raw = llm.invoke(msg).content
-    parsed = _extract_json(str(raw))
-    normalized: List[Dict[str, Any]] = []
-    for r in parsed.get("new_rules", [])[:2]:
-        nr = _normalize_rule(r)
-        if nr:
-            normalized.append(nr)
-    merged = base_rules + normalized
-    return RuleRewriteResult(merged, True, str(parsed.get("notes", "")))
+    try:
+        raw = llm.invoke(msg).content
+        parsed = _extract_json(str(raw))
+        normalized: List[Dict[str, Any]] = []
+        for r in parsed.get("new_rules", [])[:2]:
+            nr = _normalize_rule(r)
+            if nr:
+                normalized.append(nr)
+        merged = base_rules + normalized
+        return RuleRewriteResult(merged, True, str(parsed.get("notes", "")))
+    except Exception as exc:  # pragma: no cover - external dependency failures
+        merged = base_rules + _heuristic_new_rules(game_profile, business_goal)
+        return RuleRewriteResult(merged, False, f"LLM调用失败，已回退启发式扩展: {exc}")
 

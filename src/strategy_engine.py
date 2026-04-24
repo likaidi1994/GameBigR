@@ -98,16 +98,20 @@ def _build_rule_sql(rule: RuleDefinition, game_row: sqlite3.Row) -> Tuple[str, s
 
 def select_rules_and_build_sql(needs: Dict[str, float], game_row: sqlite3.Row) -> StrategyOutput:
     ranked_needs = [n for n, _ in sorted(needs.items(), key=lambda x: x[1], reverse=True)]
-    # Keep more candidate needs so missing-feature proxy rules have chance to participate.
+    # Keep the previous package size target: rules produced by top-7 needs.
+    # We will globally rank all candidate rules by need_strength * confidence,
+    # then truncate to this budget.
     chosen = ranked_needs[:7]
+    target_rule_count = sum(len(NEED_TO_RULE_TEMPLATES.get(need, [])) for need in chosen)
 
-    rule_rows: List[Dict[str, object]] = []
-    p0_sql, p1_sql, p2_sql, excl_sql = [], [], [], []
-    for need in chosen:
+    candidate_rows: List[Dict[str, object]] = []
+    for need in ranked_needs:
+        need_strength = float(needs.get(need, 0.0))
         for rule in NEED_TO_RULE_TEMPLATES.get(need, []):
             expr, source = _build_rule_sql(rule, game_row)
             #TODO: 数据可用性置信度 当前只是简单的数据可用性置信度，未来需要根据业务目标进行更复杂的调整
             conf = PLAYER_AVAILABILITY.get(rule.target_column).confidence if rule.target_column in PLAYER_AVAILABILITY else 0.7
+            selection_score = round(need_strength * float(conf), 6)
             row = {
                 "rule_id": rule.rule_id,
                 "tier": rule.tier,
@@ -116,16 +120,12 @@ def select_rules_and_build_sql(needs: Dict[str, float], game_row: sqlite3.Row) -
                 "sql_expr": expr,
                 "evidence_source": source,
                 "confidence": round(conf, 2),
+                "selection_score": selection_score,
             }
-            rule_rows.append(row)
-            if rule.tier == "P0":
-                p0_sql.append(expr)
-            elif rule.tier == "P1":
-                p1_sql.append(expr)
-            elif rule.tier == "P2":
-                p2_sql.append(expr)
-            else:
-                excl_sql.append(expr)
+            candidate_rows.append(row)
+
+    sorted_rows = sorted(candidate_rows, key=lambda r: float(r.get("selection_score", 0.0)), reverse=True)
+    rule_rows = sorted_rows[:target_rule_count] if target_rule_count > 0 else sorted_rows
 
     sql_packages = build_sql_packages_from_rules(rule_rows)
     return StrategyOutput(needs=needs, rules=rule_rows, sql_packages=sql_packages)

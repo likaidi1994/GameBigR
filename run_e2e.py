@@ -111,6 +111,7 @@ def main() -> None:
         package_name="high_potential_expand",
         business_goal=business_goal,
         needs=result["needs"],
+        rules=result["rules"],
     )
     updated = update_weights_from_feedback(conn, business_goal=business_goal)
     print(
